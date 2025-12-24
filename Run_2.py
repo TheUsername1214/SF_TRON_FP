@@ -4,6 +4,7 @@ from SF_TRON_FP.utils.Config.Config import *
 
 maximum_step = PPO_Config.PPOParam.maximum_step
 episode = PPO_Config.PPOParam.episode
+time_per_epi = Env_Config.EnvParam.dt*maximum_step
 train = Env_Config.EnvParam.train
 AC_trained = Actor_Critic(PPO_Config, Env_Config,index=0)
 AC_trained.load_best_model()
@@ -16,7 +17,9 @@ import torch
 env.prim_initialization(reset_all=True)
 for epi in range(episode):
     print(f"===================episode: {epi}===================")
-    env.resample_command(activate = False)
+    if epi % int(5/time_per_epi+1) ==0:
+        env.resample_command()
+        env.apply_disturbance()
     for step in range(maximum_step):
         """获取当前状态"""
         state = env.get_current_observations()
@@ -30,7 +33,7 @@ for epi in range(episode):
         action2, scaled_action2 = AC.sample_action(state,deterministic=not train)
 
         """更新环境"""
-        env.update_world(action=scaled_action1*0.25+scaled_action2*0.75)
+        env.update_world(scaled_action=scaled_action1*1+scaled_action2*1)
 
         """获取下一个状态"""
 

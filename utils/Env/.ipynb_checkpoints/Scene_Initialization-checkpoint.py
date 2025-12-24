@@ -22,24 +22,16 @@ def EnvSetup(file_path, dt, sub_step, agents_num, device, DomainRandomizationCfg
     num_row = 10
     """生成地形高度图"""
     sub_terrains = {}
-    # sub_terrains[f"stepping_stone"] = HfSteppingStonesTerrainCfg(
-    #     proportion=1.0,
-    #     border_width=0.1,
-    #     holes_depth=-0.3,  # 这个不能给高，不然碰撞计算要花很久
-    #     stone_height_max=0,
-    #     stone_width_range=(0.4, 0.6), # 0.5的宽度实际上是0.4m
-    #     stone_distance_range=(0.1, 0.15),#0.2的间距实际上是0.3m ，0.1的间距就是0.2m
-    #     platform_width=0.8,
-    # )
-    # sub_terrains[f"stepping_stone_real"] = HfSteppingStonesTerrainCfg(
-    #     proportion=1.0,
-    #     border_width=0.1,
-    #     holes_depth=-0.3,  # 这个不能给高，不然碰撞计算要花很久
-    #     stone_height_max=0,
-    #     stone_width_range=(0.5, 0.5), # 0.5的宽度实际上是0.4m
-    #     stone_distance_range=(0.1, 0.1),#0.2的间距实际上是0.3m ，0.1的间距就是0.2m
-    #     platform_width=0.8,
-    # )
+    sub_terrains[f"stepping_stone"] = HfSteppingStonesTerrainCfg(
+        proportion=1.0,
+        border_width=0.1,
+        holes_depth=-0.2,  # 这个不能给高，不然碰撞计算要花很久
+        stone_height_max=0,
+        stone_width_range=(0.4, 0.6), # 0.5的宽度实际上是0.4m
+        stone_distance_range=(0.1, 0.2),#0.2的间距实际上是0.3m ，0.1的间距就是0.2m
+        platform_width=0.8,
+    )
+
     sub_terrains[f"flat_plane"] = HfRandomUniformTerrainCfg(
         proportion=1.0,
         border_width=0.1,
@@ -56,7 +48,7 @@ def EnvSetup(file_path, dt, sub_step, agents_num, device, DomainRandomizationCfg
         color_scheme="none",
         sub_terrains=sub_terrains,
         curriculum=False,
-        border_width=10,
+        border_width=20,
     )
 
     """添加仿真环境的参与物体"""
@@ -91,7 +83,8 @@ def EnvSetup(file_path, dt, sub_step, agents_num, device, DomainRandomizationCfg
         robot = ArticulationCfg(
             spawn=sim_utils.UsdFileCfg(
                 usd_path=file_path,
-                activate_contact_sensors=1),
+                activate_contact_sensors=True,
+                articulation_props=sim_utils.ArticulationRootPropertiesCfg(enabled_self_collisions=True, solver_position_iteration_count=4, solver_velocity_iteration_count=0)),
             prim_path="{ENV_REGEX_NS}/Robot",
             actuators={"wheel_acts": ImplicitActuatorCfg(joint_names_expr=[".*"], damping=None, stiffness=None)},
             collision_group=0,
@@ -175,7 +168,7 @@ def EnvSetup(file_path, dt, sub_step, agents_num, device, DomainRandomizationCfg
     origin_material[..., 0:2] += (friction_range * torch.rand_like(origin_material[..., 0:2])) # only add friction
     origin_material[..., 0:2].clamp_(0.5, 2.0)
     origin_material[..., 2] += (restitution_range * torch.rand_like(origin_material[..., 2]))
-    origin_material[..., 2].clamp_(0.0, 2.0)
+    origin_material[..., 2].clamp_(0.0, 1) # restitution max=1
     rb_view.set_material_properties(origin_material, indices)
 
     return sim, scene

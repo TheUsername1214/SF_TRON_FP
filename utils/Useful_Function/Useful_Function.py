@@ -93,6 +93,10 @@ def Add_ObsNoise(state,ObsNoiseCfg,device):
     body_ori_noise = ObsNoiseCfg.body_ori_noise * (2 * torch.rand_like(state[2]).to(device) - 1)
     body_angular_vel = ObsNoiseCfg.body_angular_vel_noise * (2 * torch.rand_like(state[3]).to(device) - 1)
     depth_camera_noise = ObsNoiseCfg.depth_camera_noise * (2 * torch.rand_like(state[4]).to(device) - 1)
+
+    hole_mask = torch.rand_like(state[4])<0.01
+    depth_camera_noise += -state[4]*hole_mask
+
     return (joint_angle_noise,
             joint_angular_vel_noise,
             body_ori_noise,

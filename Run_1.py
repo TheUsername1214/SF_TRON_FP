@@ -4,6 +4,7 @@ from SF_TRON_FP.utils.Config.Config import *
 
 maximum_step = PPO_Config.PPOParam.maximum_step
 episode = PPO_Config.PPOParam.episode
+time_per_epi = Env_Config.EnvParam.dt*maximum_step
 train = Env_Config.EnvParam.train
 AC = Actor_Critic(PPO_Config, Env_Config)
 if not train:
@@ -15,17 +16,11 @@ import torch
 env.prim_initialization(reset_all=True)
 for epi in range(episode):
     print(f"===================episode: {epi}===================")
-    if epi % 5 ==0:
+    if epi % int(5/time_per_epi+1) ==0:
         env.resample_command()
         env.apply_disturbance()
     for step in range(maximum_step):
         """获取当前状态"""
-
-        if not train:
-            env.vel_cmd[:] = 1
-            if epi>6:
-                env.vel_cmd[:] = 0
-                print("stop!!!!!!!")
         state = env.get_current_observations()
         state[:,33:] = 0  # basic state 之后就是地图信息，第一阶段机器人盲走
 
