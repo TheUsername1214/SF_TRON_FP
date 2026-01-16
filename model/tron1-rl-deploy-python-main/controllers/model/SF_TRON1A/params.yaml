@@ -1,0 +1,46 @@
+PointfootCfg:
+  loop_frequency: 500
+  joint_names:
+    - "abad_L_Joint"
+    - "hip_L_Joint"
+    - "knee_L_Joint"
+    - "ankle_L_Joint"
+    - "abad_R_Joint"
+    - "hip_R_Joint"
+    - "knee_R_Joint"
+    - "ankle_R_Joint"
+
+  init_state:
+    # target angles [rad] when action = 0.0
+    default_joint_angle:
+      abad_L_Joint: 0.1
+      hip_L_Joint: 0.05
+      knee_L_Joint: -0.05
+      ankle_L_Joint: -0.1
+
+      abad_R_Joint: -0.1
+      hip_R_Joint: -0.05
+      knee_R_Joint: 0.05
+      ankle_R_Joint: -0.1
+
+  control:
+    # PD Drive parameters:
+    stiffness: 80
+    damping: 12
+    ankle_joint_stiffness: 40 
+    ankle_joint_damping: 2
+
+    decimation: 10
+
+
+  size:
+    actions_size: 8
+    observations_size: 227
+
+  stand_mode:
+    stand_duration: 2
+
+  imu_orientation_offset:
+    roll: 0.0
+    pitch: 0.0
+    yaw: 0

@@ -50,7 +50,6 @@ class Tron_Env:
         self.initial_joint_vel_range = Robot_Config.InitialState.initial_joint_vel_range
         self.initial_height = Robot_Config.InitialState.initial_height
         self.initial_euler_angle_range = Robot_Config.InitialState.initial_euler_angle_range
-        self.frequency = Robot_Config.InitialState.frequency
 
         """初始化额外机器人参数"""
         self.vel_cmd = torch.zeros((self.agents_num, 1), device=self.device)  # 速度指令,0表示暂停，1表示前进
@@ -187,8 +186,8 @@ class Tron_Env:
 
         # 获取时间和时钟信号a
         clock_signal = 2 * torch.pi * self.phase
-        self.sine_clock = torch.sin(self.frequency*clock_signal)
-        self.cosine_clock = torch.cos(self.frequency*clock_signal)
+        self.sine_clock = torch.sin(clock_signal)
+        self.cosine_clock = torch.cos(clock_signal)
 
         current_map = self.scene["Depth_Camera"].data.output['distance_to_image_plane'].reshape(self.agents_num, -1)
         # 拼接出下一时刻状态空间张量，并归一化
@@ -209,7 +208,7 @@ class Tron_Env:
              self.cosine_clock,
              self.action,
              self.vel_cmd,
-             current_map + current_noise[4]
+             0.25*(current_map.clip(0,6) + current_noise[4])
              ), dim=1)
 
         # #——————————————————————获取当前时刻状态结束————————————————————————————————##
@@ -250,12 +249,12 @@ class Tron_Env:
         offset = 0.5
         self.phase = (self.time)%period /period
         clock_signal = 2 * torch.pi * self.phase 
-        self.sine_clock = torch.sin(self.frequency*clock_signal)
-        self.cosine_clock = torch.cos(self.frequency*clock_signal)
+        self.sine_clock = torch.sin(clock_signal)
+        self.cosine_clock = torch.cos(clock_signal)
+
+
 
         next_map = self.scene["Depth_Camera"].data.output['distance_to_image_plane'].reshape(self.agents_num, -1)
-
-
         # 生成噪声
         next_noise = Add_ObsNoise(state=(self.next_joint_pos,
                                          self.next_joint_vel,
@@ -274,7 +273,7 @@ class Tron_Env:
                                         self.cosine_clock,
                                         self.action,
                                         self.vel_cmd,
-                                        next_map + +next_noise[4]), dim=1)
+                                        0.25*(next_map.clip(0,6) + next_noise[4])), dim=1)
 
         # #——————————————————————获取下一时刻状态结束————————————————————————————————##
 
@@ -283,8 +282,14 @@ class Tron_Env:
         self.next_body_height = self.next_body_pos[:, 2].view(-1, 1)
         L_foot_pos, R_foot_pos = (self.scene["L_imu_sensor"].data.pos_w,
                                   self.scene["R_imu_sensor"].data.pos_w)
-        self.next_L_foot_angle, self.next_R_foot_angle = (get_euler_angle(self.scene["L_imu_sensor"].data.quat_w)[:,1],
-                                get_euler_angle(self.scene["R_imu_sensor"].data.quat_w)[:,1])
+        self.next_L_foot_angle, self.next_R_foot_angle = (get_euler_angle(self.scene["L_imu_sensor"].data.quat_w)[:,1:2],
+                                get_euler_angle(self.scene["R_imu_sensor"].data.quat_w)[:,1:2])
+        
+        self.next_L_foot_lin_vel,self.next_R_foot_lin_vel = (self.scene["L_imu_sensor"].data.lin_vel_b,
+                                                             self.scene["R_imu_sensor"].data.lin_vel_b)
+        
+        self.next_L_foot_ang_vel,self.next_R_foot_ang_vel = (self.scene["L_imu_sensor"].data.ang_vel_b,
+                                                             self.scene["R_imu_sensor"].data.ang_vel_b)
 
         self.next_L_foot_forward, self.next_L_foot_lateral = yaw_transforming(L_foot_pos[:, 0],
                                                                               L_foot_pos[:, 1],
@@ -356,7 +361,7 @@ class Tron_Env:
 
         if_forward = (self.vel_cmd == 1).float()
 
-        reward_vel_forward = - 1 * torch.abs(vel_forward- 0.5 * if_forward) + 0.5
+        reward_vel_forward = - 1 * torch.abs(vel_forward- 0.7 * if_forward) + 0.7
         reward_vel_lateral = - 0.6 * torch.abs( vel_lateral )
         reward_vel_vertical = - 0.6 * torch.abs(self.next_linear_vel[:, 2].view(-1,1))
         reward = reward_vel_lateral + reward_vel_forward + reward_vel_vertical
@@ -374,8 +379,9 @@ class Tron_Env:
     """方位角跟踪（ZYX）"""
 
     def body_ori_tracking_reward(self):
-        reward_ori_track = -0.3 * self.next_body_ori[:,:2].norm(dim=1, keepdim=True)
+        reward_ori_track = -0.0 * self.next_body_ori[:,:2].norm(dim=1, keepdim=True)
         reward_ori_track += -0.3 * self.next_body_ori[:,2].view(-1,1).norm(dim=1, keepdim=True)
+        reward_ori_track += -0.3 * (self.next_L_foot_angle.abs()+self.next_R_foot_angle.abs()).norm(dim=1, keepdim=True)
         reward_ori_track += -0.05 * self.next_angular_velocities.norm(dim=1, keepdim=True)
         reward_ori_track += 0.5
         reward_ori_track *= 1
@@ -385,10 +391,15 @@ class Tron_Env:
     """脚部限制"""
 
     def foot_constraint_reward(self):
+        
         foot_regularization_reward = -0.3 * (self.next_joint_pos[:, 0].view(-1,1)-0.1).abs()
         foot_regularization_reward += -0.3 * (self.next_joint_pos[:, 1].view(-1,1)+0.1).abs()
-        foot_regularization_reward += -2*(self.next_L_foot_z-0.16).abs()*(~self.next_L_foot_contact_situation)
-        foot_regularization_reward += -2*(self.next_R_foot_z-0.16).abs()*(~self.next_R_foot_contact_situation)
+        foot_regularization_reward += -2*(self.next_L_foot_z-0.12).abs()*(~self.next_L_foot_contact_situation)
+        foot_regularization_reward += -2*(self.next_R_foot_z-0.12).abs()*(~self.next_R_foot_contact_situation)
+
+        foot_regularization_reward += -0.2*(self.next_L_foot_lin_vel.abs()).sum(dim=-1,keepdim=True)*(self.next_L_foot_contact_situation)
+        foot_regularization_reward += -0.2*(self.next_R_foot_lin_vel.abs()).sum(dim=-1,keepdim=True)*(self.next_R_foot_contact_situation)
+
         foot_regularization_reward *= 2
 
         return foot_regularization_reward
@@ -405,8 +416,8 @@ class Tron_Env:
         phase_L = self.phase.clone()
         phase_R = (phase_L + offset)%1
 
-        is_stance_L = phase_L<0.55
-        is_stance_R = phase_R<0.55
+        is_stance_L = phase_L<0.6
+        is_stance_R = phase_R<0.6
         is_double_stance = is_stance_L&is_stance_R
         
         """OLD"""
@@ -443,7 +454,7 @@ class Tron_Env:
         return feet_air_time.view(-1, 1)
 
     def stand_still(self):
-        stand_still_reward = -0.6*self.joint_pos[:,2:].abs().mean(dim=-1,keepdim=True)
+        stand_still_reward = -0.5*self.joint_pos[:,2:].abs().mean(dim=-1,keepdim=True)
         stand_still_reward += -0.1*self.joint_vel.abs().mean(dim=-1,keepdim=True)
         stand_still_reward *= (self.vel_cmd == 0)
         return stand_still_reward
@@ -455,7 +466,7 @@ class Tron_Env:
         over2 = torch.abs(self.next_body_ori[:, 1].view(-1, 1)) > np.pi / 3
         over3 = torch.abs(self.next_body_ori[:, 2].view(-1, 1)) > np.pi / 3
         over4 = (self.next_body_height - self.next_min_foot_z) < 0.7
-        over5 = self.next_min_foot_z < -0.0
+        over5 = self.next_min_foot_z < 0.05
         self.over = over1 | over2 | over3 | over4 | over5
         reward_fall = - self.over.float() * 10
         return reward_fall.view(-1, 1)
@@ -471,7 +482,7 @@ class Tron_Env:
         reward += 1 * self.foot_air_time_reward()
         reward += 1 * self.stand_still()
         reward += 1 * self.Termination_reward()
-        reward += 1
+        reward += 0.8
 
         self.vel_tracking_reward_sum += self.vel_tracking_reward().mean().item() / self.max_step
         self.body_height_tracking_reward_sum += self.body_height_tracking_reward().mean().item() / self.max_step

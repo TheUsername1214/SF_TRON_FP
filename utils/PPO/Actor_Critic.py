@@ -170,7 +170,7 @@ class Actor_Critic:
         over = buffer.over_buffer.view(-1, 1)
         reward_sum = reward.mean().item()
 
-        self.save_each_epi_model()
+        # self.save_each_epi_model()
         if reward_sum > self.initial_reward_sum:
             self.initial_reward_sum = reward_sum
             self.save_best_model()

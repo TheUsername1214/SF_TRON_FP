@@ -8,14 +8,14 @@ class Env_Config:
         friction_coef = 1
         device = 'cuda'
         backend = "torch"
-        headless = True  # True: no GUI, False: GUI
+        headless = True # True: no GUI, False: GUI
         train = headless
 
 
 class Robot_Config:
     class ActuatorParam:  # 机T器人的参数
         Kp = [80, 80, 80, 80, 80, 80, 40, 40]
-        Kd = [8, 8, 8, 8, 8 , 8, 2, 2]  # Do not try to reduce Kd, because the action scale is not 0.25 but 1
+        Kd = [12, 12, 12, 12, 12 , 12, 2, 2]  # Do not try to reduce Kd, because the action scale is not 0.25 but 1
         default_PD_angle = [0.15, -0.15,
                             0, 0,
                             0, 0,
@@ -25,22 +25,22 @@ class Robot_Config:
 
     class InitialState:
         initial_height = 0.85
-        initial_euler_angle_range = [0.1,0.25,0.3]
-        initial_body_linear_vel_range = 0.3
-        initial_body_angular_vel_range = 0.3
-        initial_joint_pos_range = 0.2
-        initial_joint_vel_range = 0.2
+        initial_euler_angle_range = [0.1,0.25,0.1]
+        initial_body_linear_vel_range = 0.2
+        initial_body_angular_vel_range = 0.2
+        initial_joint_pos_range = 0.1
+        initial_joint_vel_range = 0
         initial_joint_angle = [0, 0,
                                -0, 0,
                                0, 0,
                                0, 0]
-        frequency = 1
+
 
                                
 
     class DomainRandomizationCfg:
         # relative
-        inertia_range = 0.3 #  angular inertia
+        inertia_range = 0.2 #  angular inertia
         mass_range = 0.2 # unit in [Kg], only act on base mass
         com_range = 0.2 # unit in [m]
         # abs
@@ -49,15 +49,15 @@ class Robot_Config:
 
     class ObservationNoiseCfg:
         # relative,
-        Kp_range = 0.2
-        Kd_range = 0.2
+        Kp_range = 0.1
+        Kd_range = 0.1
 
         # abs noise
         joint_angle_noise = 0.02
         joint_angular_vel_noise = 0.1
         body_ori_noise = 0
         body_angular_vel_noise = 0.075
-        depth_camera_noise = 0.1
+        depth_camera_noise = 0.04
 
 
 class PPO_Config:
@@ -73,7 +73,7 @@ class PPO_Config:
         act_layers_num = 256
         actuator_num = Robot_Config.ActuatorParam.actuator_num
         actor_lr = 2e-4
-        actor_update_frequency = 100
+        actor_update_frequency = 40
 
     class PPOParam:  # 强化学习 PPO算法 参数
         gamma = 0.99
@@ -81,5 +81,5 @@ class PPO_Config:
         epsilon = 0.2
         maximum_step = 25
         episode = 3000
-        entropy_coef = -0.005  # positive means std increase, else decrease
+        entropy_coef = -0.00  # positive means std increase, else decrease
         batch_size = 20000

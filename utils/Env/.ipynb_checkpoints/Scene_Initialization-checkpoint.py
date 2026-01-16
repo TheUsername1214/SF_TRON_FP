@@ -19,36 +19,40 @@ def EnvSetup(file_path, dt, sub_step, agents_num, device, DomainRandomizationCfg
     friction_range = DomainRandomizationCfg.friction_range
     restitution_range = DomainRandomizationCfg.restitution_range
 
-    num_row = 10
+    num_row = 8
     """生成地形高度图"""
     sub_terrains = {}
-    sub_terrains[f"stepping_stone"] = HfSteppingStonesTerrainCfg(
-        proportion=1.0,
-        border_width=0.1,
-        holes_depth=-0.2,  # 这个不能给高，不然碰撞计算要花很久
-        stone_height_max=0,
-        stone_width_range=(0.4, 0.6), # 0.5的宽度实际上是0.4m
-        stone_distance_range=(0.1, 0.2),#0.2的间距实际上是0.3m ，0.1的间距就是0.2m
-        platform_width=0.8,
-    )
+    terrian_number = 5
+    holes_depth = np.linspace(-0.15,-0.25,terrian_number)
+    for i in range(terrian_number):
+        sub_terrains[f"stepping_stone{i}"] = HfSteppingStonesTerrainCfg(
+            proportion=1.0,
+            border_width=0.1,
+            holes_depth=holes_depth[i],  # 这个不能给高，不然碰撞计算要花很久
+            stone_height_max=0,
+            stone_width_range=(0.5, 0.8),
+            stone_distance_range=(0.05, 0.2),
+            platform_width=0.7,
+            )
 
-    sub_terrains[f"flat_plane"] = HfRandomUniformTerrainCfg(
-        proportion=1.0,
-        border_width=0.1,
-        noise_range=(-0.01, 0.01),
-        noise_step=0.01,
-    )
+        # sub_terrains[f"flat_plane{i}"] = HfRandomUniformTerrainCfg(
+        #     proportion=1.0,
+        #     border_width=0.1,
+        #     noise_range=(-0.01, 0.01),
+        #     noise_step=0.01,
+        #     )
     print(f"Environment initialization: num_row of terrains: {num_row}x{num_row}")
 
     """生成地形配置文件"""
     gen_cfg = TerrainGeneratorCfg(
         num_rows=num_row,  # 太多了会出问题，比如碰撞体失效
         num_cols=num_row,
-        size=(10, 3),
+        size=(10, 4),
         color_scheme="none",
         sub_terrains=sub_terrains,
         curriculum=False,
         border_width=20,
+        horizontal_scale = 0.025 # high resolution mesh
     )
 
     """添加仿真环境的参与物体"""

@@ -170,7 +170,7 @@ class Actor_Critic:
         over = buffer.over_buffer.view(-1, 1)
         reward_sum = reward.mean().item()
 
-        self.save_each_epi_model()
+        # self.save_each_epi_model()
         if reward_sum > self.initial_reward_sum:
             self.initial_reward_sum = reward_sum
             self.save_best_model()
@@ -190,7 +190,7 @@ class Actor_Critic:
             with torch.no_grad():
                 next_value = self.critic(ns_batch)
                 target_value = r_batch + self.gamma * next_value * (1 - o_batch)
-            critic_loss = self.loss_fn(value, target_value) + 0.01*self.loss_fn(value, next_value)
+            critic_loss = self.loss_fn(value, target_value) + 0*self.loss_fn(value, next_value)
             self.critic_optimizer.zero_grad()
             critic_loss.backward()
             self.critic_optimizer.step()
@@ -208,7 +208,7 @@ class Actor_Critic:
             # 计算新策略
             mu, std = self.actor(s_batch)
             with torch.no_grad():
-                next_mu, _ = self.critic(ns_batch)
+                next_mu,_ = self.actor(ns_batch)
             new_prob = torch.distributions.Normal(mu, std).log_prob(a_batch).sum(dim=1, keepdim=True)
 
             # PPO损失
@@ -218,7 +218,7 @@ class Actor_Critic:
 
             entropy = torch.distributions.Normal(mu, std).entropy().mean()
             actor_loss = -torch.min(surr1, surr2).mean() \
-                         - self.entropy_coef * entropy + 0.01*self.loss_fn(mu, next_mu)
+                         - self.entropy_coef * entropy + 0.6*self.loss_fn(mu, next_mu)
 
             self.actor_optimizer.zero_grad()
             actor_loss.backward()
