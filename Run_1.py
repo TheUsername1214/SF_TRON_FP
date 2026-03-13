@@ -4,19 +4,19 @@ import os
 current_dir = os.path.dirname(os.path.abspath(__file__))
 project_root = os.path.dirname(current_dir)  # 假设脚本在项目子目录中
 sys.path.insert(0, project_root)
-from SF_TRON_FP.utils.Env.Tron_Env import Tron_Env
-from SF_TRON_FP.utils.PPO.Actor_Critic import Actor_Critic
-from SF_TRON_FP.utils.Config.Config import *
+from SF_TRON_FP.SRC.Env.TronEnv import TronEnv
+from SF_TRON_FP.SRC.PPO.Actor_Critic import Actor_Critic
+from SF_TRON_FP.SRC.Config.Config import *
 
-maximum_step = PPO_Config.PPOParam.maximum_step
-episode = PPO_Config.PPOParam.episode
-time_per_epi = Env_Config.EnvParam.dt*maximum_step
-train = Env_Config.EnvParam.train
-AC = Actor_Critic(PPO_Config, Env_Config)
+maximum_step = PPOCfg.PPOParam.maximum_step
+episode = PPOCfg.PPOParam.episode
+time_per_epi = EnvCfg.EnvParam.dt*maximum_step
+train = EnvCfg.EnvParam.train
+AC = Actor_Critic(PPOCfg, EnvCfg)
 if not train:
     AC.load_best_model()
 
-env = Tron_Env(Env_Config, Robot_Config, PPO_Config)
+env = TronEnv(EnvCfg, RobotCfg, PPOCfg)
 import torch
 
 env.prim_initialization(reset_all=True)
