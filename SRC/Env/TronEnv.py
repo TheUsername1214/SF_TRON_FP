@@ -337,7 +337,7 @@ class TronEnv(BaseEnv):
         print(f"foot_air_time_reward_sum: {self.foot_air_time_reward_sum:.4f}")
         print("")
         print(f"Termination_reward_sum: {self.Termination_reward_sum:.4f}")
-        print(f"simulation time:{self.t_module.time() - self.start_time:.2f} s")
+        print(f"simulation time:{self.t.time() - self.start_time:.2f} s")
 
         self.vel_tracking_reward_sum = 0
         self.body_height_tracking_reward_sum = 0

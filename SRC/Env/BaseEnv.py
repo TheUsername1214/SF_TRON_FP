@@ -67,6 +67,7 @@ class BaseEnv:
         self.single_support_reward_sum = 0
         self.foot_air_time_reward_sum = 0
         self.Termination_reward_sum = 0
+        self.t_module = t
         self.start_time = t.time()
 
         """初始化Isaac Sim环境"""
