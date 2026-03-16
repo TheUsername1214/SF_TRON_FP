@@ -62,7 +62,7 @@ def _create_simulation_context(dt: float, sub_step: int, device: str) -> sim_uti
     return sim_utils.SimulationContext(sim_cfg)
 
 
-def _build_terrain_generator_config(num_rows: int = 3) -> TerrainGeneratorCfg:
+def _build_terrain_generator_config(num_rows: int = 5) -> TerrainGeneratorCfg:
     """
     构建地形生成器配置，包含多个垫脚石地形，用于训练。
 
@@ -72,11 +72,11 @@ def _build_terrain_generator_config(num_rows: int = 3) -> TerrainGeneratorCfg:
     Returns:
         地形生成器配置对象。
     """
-    terrain_number = 2
+    terrain_number = 3
     sub_terrains = {}
 
     # 生成多个不同深度的垫脚石地形
-    depths = 1*np.linspace(-0.15, -0.25, terrain_number)
+    depths = 1*np.linspace(-0.15, -0.2, terrain_number)
     for i, depth in enumerate(depths):
         sub_terrains[f"stepping_stone{i}"] = HfSteppingStonesTerrainCfg(
             proportion=1.0,

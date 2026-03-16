@@ -41,7 +41,7 @@ for epi in range(episode):
         action2, scaled_action2 = PPO_2.sample_action(state, deterministic=not train)
 
         """更新环境"""
-        env.update_world(scaled_action=scaled_action1 * 1 + scaled_action2 * 1)
+        env.update_world(scaled_action=scaled_action1 * 0.2 + scaled_action2 * 0.8)
 
         """获取下一个状态"""
 

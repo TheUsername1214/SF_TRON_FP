@@ -154,7 +154,7 @@ class SolefootController_Camera:
         self.stand_duration = config['PointfootCfg']['stand_mode']['stand_duration']
         self.control_cfg = config['PointfootCfg']['control']
         self.actions_size = config['PointfootCfg']['size']['actions_size']
-        self.action_scale = np.array([0.5 ,0.5 ,0.5 ,0.5 ,0.5 ,0.5 ,0.5,0.5])
+        self.action_scale = np.array([1 ,1 ,1 ,1 ,1 ,1 ,1,1])
 
         self.observations_size = config['PointfootCfg']['size']['observations_size']
 
@@ -436,7 +436,7 @@ class SolefootController_Camera:
         self.actions2 = np.array(output2).flatten()  # Lab order
 
 
-        self.actions = self.actions1.copy()*1 + self.actions2*1
+        self.actions = self.actions1.copy()*0.2 + self.actions2*0.8
         self.actions = self.actions * self.action_scale 
         self.actions += self.default_PD_angle
 

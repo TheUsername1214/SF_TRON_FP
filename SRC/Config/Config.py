@@ -50,15 +50,15 @@ class PPOCfg:
     class CriticParam:  # Critic 神经网络 参数
         state_dim = 33 + 18 * 11  # 机器人本体与外部指令感知
         critic_layers_num = 256
-        critic_lr = 2e-4
+        critic_lr = 1e-4
         critic_update_frequency = 300
 
     class ActorParam:  # Actor 神经网络 参数
-        action_scale = [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5]
+        action_scale = [1, 1, 1, 1, 1, 1, 1, 1]
         std_scale = 0.5
         act_layers_num = 256
         actuator_num = RobotCfg.ActuatorParam.actuator_num
-        actor_lr = 2e-4
+        actor_lr = 1e-4
         actor_update_frequency = 40
 
     class PPOParam:  # 强化学习 PPO算法 参数
@@ -68,5 +68,5 @@ class PPOCfg:
         policy_smooth = 0.6
         maximum_step = 25
         episode = 3000
-        entropy_coef = -0.00  # positive means std increase, else decrease
+        entropy_coef = 0.05  # positive means std increase, else decrease
         batch_size = 20000
