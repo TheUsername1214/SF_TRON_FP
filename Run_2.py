@@ -11,21 +11,21 @@ from SF_TRON_FP.SRC.Config.Config import *
 
 maximum_step = PPOCfg.PPOParam.maximum_step
 episode = PPOCfg.PPOParam.episode
-time_per_epi = EnvCfg.EnvParam.dt*maximum_step
+time_per_epi = EnvCfg.EnvParam.dt * maximum_step
 train = EnvCfg.EnvParam.train
 
-Trained_AC = Actor_Critic(PPOCfg, EnvCfg,index=0)
-Trained_AC.load_best_model()
-AC = Actor_Critic(PPOCfg, EnvCfg,index=1)
+PPO_1 = Actor_Critic(PPOCfg, EnvCfg, index=0)
+PPO_1.load_best_model()
+PPO_2 = Actor_Critic(PPOCfg, EnvCfg, index=1)
 if not train:
-    AC.load_best_model()
+    PPO_2.load_best_model()
 env = TronEnv(EnvCfg, RobotCfg, PPOCfg)
 import torch
 
 env.prim_initialization(reset_all=True)
 for epi in range(episode):
     print(f"===================episode: {epi}===================")
-    if epi % int(5/time_per_epi+1) ==0:
+    if epi % int(5 / time_per_epi + 1) == 0:
         env.resample_command()
         env.apply_disturbance()
     for step in range(maximum_step):
@@ -33,15 +33,15 @@ for epi in range(episode):
         state = env.get_current_observations()
 
         state_no_camera = state.clone()
-        state_no_camera[:,33:] = 0
+        state_no_camera[:, 33:] = 0
 
         """做动作"""
 
-        action1, scaled_action1 = Trained_AC.sample_action(state_no_camera,deterministic=True)
-        action2, scaled_action2 = AC.sample_action(state,deterministic=not train)
+        action1, scaled_action1 = PPO_1.sample_action(state_no_camera, deterministic=True)
+        action2, scaled_action2 = PPO_2.sample_action(state, deterministic=not train)
 
         """更新环境"""
-        env.update_world(scaled_action=scaled_action1*1+scaled_action2*1)
+        env.update_world(scaled_action=scaled_action1 * 1 + scaled_action2 * 1)
 
         """获取下一个状态"""
 
@@ -53,12 +53,12 @@ for epi in range(episode):
 
         """存储经验"""
         if train:
-            AC.store_experience(state,
-                                action2,
-                                next_state,
-                                reward,
-                                over,
-                                step)
+            PPO_2.store_experience(state,
+                                   action2,
+                                   next_state,
+                                   reward,
+                                   over,
+                                   step)
 
         """重置挂掉的机器人"""
         over += extra_over
@@ -66,5 +66,5 @@ for epi in range(episode):
 
     """每个回合结束后训练一次"""
     if train:
-        AC.update()
+        PPO_2.update()
         env.print_reward_sum()

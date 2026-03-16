@@ -11,8 +11,6 @@ class EnvCfg:
         train = False
         headless = train  # True: no GUI, False: GUI
 
-
-
 class RobotCfg:
     class ActuatorParam:  # 机T器人的参数
         Kp = [80, 80, 80, 80, 80, 80, 40, 40]
@@ -21,7 +19,6 @@ class RobotCfg:
                             0, 0,
                             0, 0,
                             0, 0]
-        default_PD_angle_range = 0.05
         actuator_num = 8
 
     class InitialState:
@@ -38,7 +35,7 @@ class RobotCfg:
 
     class DomainRandomizationCfg:
         # relative
-        inertia_range = 0.2  #  angular inertia
+        inertia_range = 0.2  # angular inertia
         mass_range = 0.2  # unit in [Kg], only act on base mass
         com_range = 0.2  # unit in [m]
         # abs
@@ -68,6 +65,7 @@ class PPOCfg:
         gamma = 0.99
         lam = 0.95
         epsilon = 0.2
+        policy_smooth = 0.6
         maximum_step = 25
         episode = 3000
         entropy_coef = -0.00  # positive means std increase, else decrease

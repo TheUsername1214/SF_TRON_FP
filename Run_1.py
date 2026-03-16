@@ -1,5 +1,6 @@
 import sys
 import os
+
 # 自动获取当前文件的目录，然后找到项目根目录
 current_dir = os.path.dirname(os.path.abspath(__file__))
 project_root = os.path.dirname(current_dir)  # 假设脚本在项目子目录中
@@ -10,56 +11,55 @@ from SF_TRON_FP.SRC.Config.Config import *
 
 maximum_step = PPOCfg.PPOParam.maximum_step
 episode = PPOCfg.PPOParam.episode
-time_per_epi = EnvCfg.EnvParam.dt*maximum_step
+time_per_epi = EnvCfg.EnvParam.dt * maximum_step
 train = EnvCfg.EnvParam.train
-AC = Actor_Critic(PPOCfg, EnvCfg)
+PPO_1 = Actor_Critic(PPOCfg, EnvCfg)
 if not train:
-    AC.load_best_model()
+    PPO_1.load_best_model()
 
-env = TronEnv(EnvCfg, RobotCfg, PPOCfg)
+Env = TronEnv(EnvCfg, RobotCfg, PPOCfg)
 import torch
 
-env.prim_initialization(reset_all=True)
+Env.prim_initialization(reset_all=True)
 for epi in range(episode):
     print(f"===================episode: {epi}===================")
-    if epi % int(5/time_per_epi+1) ==0:
-        env.resample_command()
-        env.apply_disturbance()
+    if epi % int(5 / time_per_epi + 1) == 0:
+        Env.resample_command()
+        Env.apply_disturbance()
     for step in range(maximum_step):
         """获取当前状态"""
-        state = env.get_current_observations()
-        state[:,33:] = 0  # basic state 之后就是地图信息，第一阶段机器人盲走
+        state = Env.get_current_observations()
+        state[:, 33:] = 0  # basic state 之后就是地图信息，第一阶段机器人盲走
 
         """做动作"""
-        action, scaled_action = AC.sample_action(state,deterministic=not train)
+        action, scaled_action = PPO_1.sample_action(state, deterministic=not train)
 
         """更新环境"""
-        env.update_world(scaled_action=scaled_action)
+        Env.update_world(scaled_action=scaled_action)
 
         """获取下一个状态"""
 
-        next_state = env.get_next_observations()
+        next_state = Env.get_next_observations()
         next_state[:, 33:] = 0
 
         """计算奖励 判断是否结束"""
 
-        reward, over, extra_over = env.compute_reward()
-
+        reward, over, extra_over = Env.compute_reward()
 
         """存储经验"""
         if train:
-            AC.store_experience(state,
-                                action,
-                                next_state,
-                                reward,
-                                over,
-                                step)
+            PPO_1.store_experience(state,
+                                   action,
+                                   next_state,
+                                   reward,
+                                   over,
+                                   step)
 
         """重置挂掉的机器人"""
         over += extra_over
-        env.prim_initialization(torch.nonzero(over.flatten()).flatten())
+        Env.prim_initialization(torch.nonzero(over.flatten()).flatten())
 
     """每个回合结束后训练一次"""
     if train:
-        AC.update()
-        env.print_reward_sum()
+        PPO_1.update()
+        Env.print_reward_sum()

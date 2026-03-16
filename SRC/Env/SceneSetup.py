@@ -14,8 +14,12 @@ from isaaclab.sim import DomeLightCfg
 from isaaclab.utils.assets import ISAAC_NUCLEUS_DIR
 
 
-def create_environment(file_path: str, dt: float, sub_step: int, agents_num: int,
-                       device: str, domain_randomization_cfg) -> Tuple[sim_utils.SimulationContext, InteractiveScene]:
+def create_environment(file_path: str,
+                       dt: float,
+                       sub_step: int,
+                       agents_num: int,
+                       device: str,
+                       domain_randomization_cfg) -> Tuple[sim_utils.SimulationContext, InteractiveScene]:
     """
     创建 Isaac Lab 仿真环境，包括地形、机器人、传感器以及可选的域随机化。
 
@@ -72,7 +76,7 @@ def _build_terrain_generator_config(num_rows: int = 3) -> TerrainGeneratorCfg:
     sub_terrains = {}
 
     # 生成多个不同深度的垫脚石地形
-    depths = np.linspace(-0.15, -0.25, terrain_number)
+    depths = 1*np.linspace(-0.15, -0.25, terrain_number)
     for i, depth in enumerate(depths):
         sub_terrains[f"stepping_stone{i}"] = HfSteppingStonesTerrainCfg(
             proportion=1.0,
@@ -146,14 +150,14 @@ class _RobotSceneCfg(InteractiveSceneCfg):
         collision_group=0,
     )
 
-    # 传感器
+    # 左脚碰撞传感器
     L_contact_sensor = ContactSensorCfg(
         prim_path="{ENV_REGEX_NS}/Robot/ankle_L_Link",
         update_period=0.0,
         history_length=1,
         debug_vis=False,
     )
-
+    # 右脚碰撞传感器
     R_contact_sensor = ContactSensorCfg(
         prim_path="{ENV_REGEX_NS}/Robot/ankle_R_Link",
         update_period=0.0,
@@ -161,22 +165,23 @@ class _RobotSceneCfg(InteractiveSceneCfg):
         debug_vis=False,
     )
 
+    # 机身位姿IMU
     imu_sensor = ImuCfg(
         prim_path="{ENV_REGEX_NS}/Robot/base_Link",
         update_period=0.0,
     )
-
+    # 左脚位姿IMU
     L_imu_sensor = ImuCfg(
         prim_path="{ENV_REGEX_NS}/Robot/ankle_L_Link",
         update_period=0.0,
     )
-
+    # 右脚位姿IMU
     R_imu_sensor = ImuCfg(
         prim_path="{ENV_REGEX_NS}/Robot/ankle_R_Link",
         update_period=0.0,
     )
 
-    # 深度相机（射线投射式）
+    # 深度相机（射线投射式，非渲染式）
     Depth_Camera = RayCasterCameraCfg(
         prim_path="{ENV_REGEX_NS}/Robot/Camera_Frame",
         update_period=0.0,

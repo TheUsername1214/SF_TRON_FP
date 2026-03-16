@@ -10,11 +10,10 @@ class BaseNetwork(torch.nn.Module):
         self.state_dim = state_dim
         self.num_layers = num_layers
 
-
         # 共享的主干网络
-        self.fc1_x = torch.nn.Linear(self.state_dim, self.num_layers*4)
-        self.fc2_x = torch.nn.Linear(self.num_layers*4, self.num_layers*2)
-        self.fc3_x = torch.nn.Linear(self.num_layers*2, self.num_layers)
+        self.fc1_x = torch.nn.Linear(self.state_dim, self.num_layers * 4)
+        self.fc2_x = torch.nn.Linear(self.num_layers * 4, self.num_layers * 2)
+        self.fc3_x = torch.nn.Linear(self.num_layers * 2, self.num_layers)
 
     def process_input(self, input_):
         """处理输入，提取状态和地图特征"""
@@ -71,6 +70,7 @@ class Actor_Critic:
         self.gamma = PPOCfg.PPOParam.gamma
         self.lam = PPOCfg.PPOParam.lam
         self.epsilon = PPOCfg.PPOParam.epsilon
+        self.policy_smooth = PPOCfg.PPOParam.policy_smooth
         self.entropy_coef = PPOCfg.PPOParam.entropy_coef
         self.batch_size = PPOCfg.PPOParam.batch_size
         self.loss_fn = torch.nn.MSELoss()
@@ -80,7 +80,6 @@ class Actor_Critic:
         self.critic_num_layers = PPOCfg.CriticParam.critic_layers_num
         self.critic_update_frequency = PPOCfg.CriticParam.critic_update_frequency
         self.critic_lr = PPOCfg.CriticParam.critic_lr
-
 
         # Env parameter
         self.agent_num = EnvCfg.EnvParam.agents_num
@@ -129,7 +128,6 @@ class Actor_Critic:
         根据状态获取动作 用于与环境交互
         Args:
             state: 当前状态 (类型: torch.tensor, 形状: [agent_num, state_dim])
-            current_step: 当前时间步
             deterministic: 是否使用确定性策略
         Returns:
             action: 选择的动作 (类型: torch.tensor, 形状: [agent_num, actuator_num])
@@ -149,6 +147,7 @@ class Actor_Critic:
         Args:
             state: 当前状态 (类型: torch.tensor, 形状: [agent_num, state_dim])
             action: 当前动作 (类型: torch.tensor, 形状: [agent  _num, actuator_num])
+            next_state: 当前状态 (类型: torch.tensor, 形状: [agent_num, state_dim])
             reward: 当前奖励 (类型: torch.tensor, 形状: [agent_num, 1])
             over: 当前是否结束 (类型: torch.tensor, 形状: [agent_num, 1])
             current_step: 当前时间步 (类型: int)
@@ -159,7 +158,7 @@ class Actor_Critic:
         self.Buffer.store_reward(reward, current_step)
         self.Buffer.store_over(over, current_step)
 
-    def update(self, previous_critic=None):
+    def update(self):
 
         # 获取经验数据
         buffer = self.Buffer
@@ -190,7 +189,7 @@ class Actor_Critic:
             with torch.no_grad():
                 next_value = self.critic(ns_batch)
                 target_value = r_batch + self.gamma * next_value * (1 - o_batch)
-            critic_loss = self.loss_fn(value, target_value) + 0*self.loss_fn(value, next_value)
+            critic_loss = self.loss_fn(value, target_value) + 0 * self.loss_fn(value, next_value)
             self.critic_optimizer.zero_grad()
             critic_loss.backward()
             self.critic_optimizer.step()
@@ -208,7 +207,7 @@ class Actor_Critic:
             # 计算新策略
             mu, std = self.actor(s_batch)
             with torch.no_grad():
-                next_mu,_ = self.actor(ns_batch)
+                next_mu, _ = self.actor(ns_batch)
             new_prob = torch.distributions.Normal(mu, std).log_prob(a_batch).sum(dim=1, keepdim=True)
 
             # PPO损失
@@ -217,8 +216,9 @@ class Actor_Critic:
             surr2 = ratio.clamp(1 - self.epsilon, 1 + self.epsilon) * gae_batch
 
             entropy = torch.distributions.Normal(mu, std).entropy().mean()
-            actor_loss = -torch.min(surr1, surr2).mean() \
-                         - self.entropy_coef * entropy + 0.6*self.loss_fn(mu, next_mu)
+            actor_loss = (-torch.min(surr1, surr2).mean()
+                          - self.entropy_coef * entropy
+                          + self.policy_smooth * self.loss_fn(mu, next_mu))
 
             self.actor_optimizer.zero_grad()
             actor_loss.backward()

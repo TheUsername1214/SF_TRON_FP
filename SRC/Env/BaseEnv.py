@@ -1,7 +1,8 @@
 from SF_TRON_FP.SRC.Utils.Transformation import *
+
+
 class BaseEnv:
     def __init__(self, EnvCfg, RobotCfg, PPOCfg):
-
 
         """初始化环境变量"""
         self.file_path = EnvCfg.EnvParam.file_path
@@ -26,16 +27,12 @@ class BaseEnv:
         self.DomainRandomizationCfg = RobotCfg.DomainRandomizationCfg
         self.Kp = FT([RobotCfg.ActuatorParam.Kp] * self.agents_num)
         self.Kd = FT([RobotCfg.ActuatorParam.Kd] * self.agents_num)
-        self.default_PD_angle_range = RobotCfg.ActuatorParam.default_PD_angle_range
         self.default_PD_angle = FT([RobotCfg.ActuatorParam.default_PD_angle] * self.agents_num)
-        self.default_PD_angle += self.default_PD_angle_range * (2 * torch.rand_like(self.default_PD_angle) - 1)
 
         Kp_range = self.DomainRandomizationCfg.Kp_range
         Kd_range = self.DomainRandomizationCfg.Kd_range
-        self.Kp = self.Kp * (1 + Kp_range * (2 * torch.rand_like(self.Kp) - 1))
-        self.Kd = self.Kd * (1 + Kd_range * (2 * torch.rand_like(self.Kd) - 1))
-
-
+        self.Kp = self.Kp * (1 + Kp_range * rand_num_like(self.Kp))
+        self.Kd = self.Kd * (1 + Kd_range * rand_num_like(self.Kd))
 
         """初始化机器人位姿参数"""
         self.initial_body_linear_vel_range = RobotCfg.InitialState.initial_body_linear_vel_range
@@ -71,8 +68,12 @@ class BaseEnv:
         self.start_time = t.time()
 
         """初始化Isaac Sim环境"""
-        self.sim, self.scene = create_environment(self.file_path, self.dt, self.sub_step, self.agents_num, self.device,
-                                        self.DomainRandomizationCfg)
+        self.sim, self.scene = create_environment(self.file_path,
+                                                  self.dt,
+                                                  self.sub_step,
+                                                  self.agents_num,
+                                                  self.device,
+                                                  self.DomainRandomizationCfg)
 
     def prim_initialization(self, agent_index=None, reset_all=False):
         """
@@ -152,4 +153,3 @@ class BaseEnv:
         initial_angular_vel += ang_vel_w
         initial_body_v_w = torch.concatenate((initial_linear_vel, initial_angular_vel), dim=1)
         self.scene["robot"].write_root_velocity_to_sim(root_velocity=initial_body_v_w, env_ids=agent_index)
-

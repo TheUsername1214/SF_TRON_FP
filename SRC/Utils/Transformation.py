@@ -2,15 +2,33 @@ import torch
 import numpy as np
 from typing import Union
 
+
 def FT(array: Union[np.ndarray, list, torch.Tensor]) -> torch.Tensor:
+    """
+    Transform numpy array or list to tensor
+    :param array:
+    :return:
+    """
     return torch.FloatTensor(array).to(torch.device("cuda:0"))
 
 
-def rand_num(shape,device):
-    return 2*torch.rand(shape[0], shape[1], device=device) - 1
+def rand_num(shape: torch.Tensor, device) -> torch.Tensor:
+    """
+    return array of [-1,1] random number
+    :param shape:
+    :return:
+    """
+    return 2 * torch.rand(shape[0], shape[1], device=device) - 1
 
-def rand_num_like(array,device):
-    return 2*torch.rand_like(array, device=device) - 1
+
+def rand_num_like(array: torch.Tensor) -> torch.Tensor:
+    """
+    return array of [-1,1] random number
+    :param array:
+    :return:
+    """
+    return 2 * torch.rand_like(array) - 1
+
 
 def yaw_transforming(x: torch.Tensor, y: torch.Tensor, yaw: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
     """
@@ -111,5 +129,3 @@ def euler_to_quaternion(euler_angles: torch.Tensor) -> torch.Tensor:
     quat = quat / torch.norm(quat, dim=1, keepdim=True)
 
     return quat
-
-
