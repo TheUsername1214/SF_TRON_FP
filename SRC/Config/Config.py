@@ -70,3 +70,10 @@ class PPOCfg:
         episode = 3000
         entropy_coef = 0.05  # positive means std increase, else decrease
         batch_size = 20000
+
+    class EstimatorParam:
+        history_length = 10
+        output_dim = 3
+        estimator_layers_num = 256
+        estimator_lr = 1e-4
+        estimator_update_frequency = 300
