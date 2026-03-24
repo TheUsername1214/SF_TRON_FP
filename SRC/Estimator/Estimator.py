@@ -26,8 +26,8 @@ class EstimatorNetwork(torch.nn.Module):
 
 
 class Estimator:
-    def __init__(self, PPOCfg, EnvCfg):
-        self.state_dim = PPOCfg.CriticParam.state_dim
+    def __init__(self, PPOCfg, EnvCfg, index):
+        self.state_dim = PPOCfg.EstimatorParam.state_dim
         self.output_dim = PPOCfg.EstimatorParam.output_dim
         self.agent_num = EnvCfg.EnvParam.agents_num
         self.device = EnvCfg.EnvParam.device
@@ -41,7 +41,7 @@ class Estimator:
         self.state_buffer = torch.zeros((self.max_step, self.agent_num, self.state_dim * self.history_length),
                                         device=self.device)
         self.forward_state_buffer = torch.zeros((self.agent_num, self.state_dim * self.history_length),
-                                        device=self.device)
+                                                device=self.device)
 
         self.output_buffer = torch.zeros((self.max_step, self.agent_num, self.output_dim), device=self.device)
 
@@ -53,11 +53,16 @@ class Estimator:
         self.idx = [torch.randperm(self.max_step * self.agent_num, device=self.device)[:self.batch_size]
                     for _ in range(self.estimator_update_frequency)]
 
-    def store_new_state_and_output(self, state, output, step, over):
-        self.state_buffer[step:, :, self.state_dim:] = over.float() * self.state_buffer[step:, :, :-self.state_dim]
-        self.state_buffer[step:, :, :self.state_dim] = state
+        self.index = index
 
-        self.forward_state_buffer[:,self.state_dim:] = over.float() * self.forward_state_buffer[:, :-self.state_dim]
+        self.min_loss_so_far = 1e6
+
+    def store_new_state_and_output(self, state, output, step, over):
+        # 前面的移到后面
+        self.state_buffer[step:, :, self.state_dim:] = (1-over.float()) * self.state_buffer[step:, :, :-self.state_dim]
+        self.state_buffer[step:, :, :self.state_dim] = state # 新的放最前面
+
+        self.forward_state_buffer[:, self.state_dim:] = (1-over.float()) * self.forward_state_buffer[:, :-self.state_dim]
         self.forward_state_buffer[:, :self.state_dim] = state
         self.output_buffer[step:, :, :] = output
 
@@ -71,10 +76,16 @@ class Estimator:
             state_batch, output_batch = state[idx], output[idx]
             estimated_output_batch = self.Estimator(state_batch)
             loss = self.loss_fn(output_batch, estimated_output_batch)
-            # print(loss.item())
+
             self.optimizer.zero_grad()
             loss.backward()
             self.optimizer.step()
+        print("Estimator loss:", loss.item())
+        if loss.item() < self.min_loss_so_far:
+            self.save_best_model()
+            self.min_loss_so_far = loss.item()
+        self.save_each_epi_model()
+
     def reset(self):
         self.forward_state_buffer[:] = 0
         self.state_buffer[:] = 0
@@ -87,6 +98,18 @@ class Estimator:
     def get_estimate_output(self):
         with torch.no_grad():
             return self.Estimator(self.forward_state_buffer)
+
+    def save_best_model(self):
+        torch.save(self.Estimator.state_dict(), f'Model/NN_Model/estimator{self.index}.pth')
+
+    def save_each_epi_model(self):
+        torch.save(self.Estimator.state_dict(), f'Model/NN_Model/estimator{self.index}_f.pth')
+
+    def load_best_model(self):
+        self.Estimator.load_state_dict(torch.load(f'Model/NN_Model/estimator{self.index}.pth'))
+
+    def load_each_epi_model(self):
+        self.Estimator.load_state_dict(torch.load(f'Model/NN_Model/estimator{self.index}_f.pth'))
 
 #
 # class EnvCfg:

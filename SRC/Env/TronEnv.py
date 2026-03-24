@@ -1,9 +1,13 @@
+import torch
+
 from SF_TRON_FP.SRC.Utils.Transformation import *
 from SF_TRON_FP.SRC.Env.BaseEnv import *
+
 
 class TronEnv(BaseEnv):
     def __init__(self, EnvCfg, RobotCfg, PPOCfg):
         super().__init__(EnvCfg, RobotCfg, PPOCfg)
+
     """-------------------以上均为初始化代码-----------------------"""
     """-------------------以上均为初始化代码-----------------------"""
     """-------------------以上均为初始化代码-----------------------"""
@@ -135,6 +139,15 @@ class TronEnv(BaseEnv):
         self.R_feet_air_time += self.dt * (~self.next_R_foot_contact_situation)
         # #——————————————————————获取额外机器人状态结束————————————————————————————————##
         return next_state
+
+    def get_privilege(self):
+
+        # #——————————————————————获取额外机器人状态————————————————————————————————##
+        linear_vel = self.scene["robot"].data.root_lin_vel_w
+        L_foot_contact_force = self.scene["L_contact_sensor"].data.net_forces_w[:, 0, 2].view(-1, 1)
+        R_foot_contact_force = self.scene["R_contact_sensor"].data.net_forces_w[:, 0, 2].view(-1, 1)
+        # #——————————————————————获取额外机器人状态结束————————————————————————————————##
+        return torch.concatenate((L_foot_contact_force, R_foot_contact_force), dim=1)
 
     """更新环境"""
 
