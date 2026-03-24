@@ -38,7 +38,7 @@ for epi in range(episode):
         Estimator_1.store_new_state_and_output(state[:,:33], privilege_state/100, step, over)
 
         if step==maximum_step-1:
-            print(Estimator_1.get_estimate_output()*100-privilege_state)
+            print("estimate_error:",(Estimator_1.get_estimate_output()*100-privilege_state).abs().mean())
 
         """做动作"""
         action, scaled_action = PPO_3.sample_action(state, deterministic=not train)
