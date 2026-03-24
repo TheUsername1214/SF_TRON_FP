@@ -29,7 +29,9 @@ class Estimator:
     def __init__(self, PPOCfg, EnvCfg, index):
         self.state_dim = PPOCfg.EstimatorParam.state_dim
         self.output_dim = PPOCfg.EstimatorParam.output_dim
-        self.agent_num = EnvCfg.EnvParam.agents_num
+        self.train = EnvCfg.EnvParam.train
+        self.agents_num = (EnvCfg.EnvParam.agents_num - EnvCfg.EnvParam.agents_num_in_play) * self.train + \
+                          EnvCfg.EnvParam.agents_num_in_play
         self.device = EnvCfg.EnvParam.device
         self.max_step = PPOCfg.PPOParam.maximum_step
         self.batch_size = PPOCfg.PPOParam.batch_size
@@ -38,19 +40,19 @@ class Estimator:
         self.estimator_lr = PPOCfg.EstimatorParam.estimator_lr
         self.estimator_update_frequency = PPOCfg.EstimatorParam.estimator_update_frequency
 
-        self.state_buffer = torch.zeros((self.max_step, self.agent_num, self.state_dim * self.history_length),
+        self.state_buffer = torch.zeros((self.max_step, self.agents_num, self.state_dim * self.history_length),
                                         device=self.device)
-        self.forward_state_buffer = torch.zeros((self.agent_num, self.state_dim * self.history_length),
+        self.forward_state_buffer = torch.zeros((self.agents_num, self.state_dim * self.history_length),
                                                 device=self.device)
 
-        self.output_buffer = torch.zeros((self.max_step, self.agent_num, self.output_dim), device=self.device)
+        self.output_buffer = torch.zeros((self.max_step, self.agents_num, self.output_dim), device=self.device)
 
         self.Estimator = EstimatorNetwork(self.state_dim * self.history_length, self.estimator_layers_num,
                                           self.output_dim).to(self.device)
         self.optimizer = torch.optim.Adam(self.Estimator.parameters(), lr=self.estimator_lr)
         self.loss_fn = torch.nn.MSELoss()
 
-        self.idx = [torch.randperm(self.max_step * self.agent_num, device=self.device)[:self.batch_size]
+        self.idx = [torch.randperm(self.max_step * self.agents_num, device=self.device)[:self.batch_size]
                     for _ in range(self.estimator_update_frequency)]
 
         self.index = index

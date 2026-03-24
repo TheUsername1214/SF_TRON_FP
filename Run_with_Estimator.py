@@ -29,16 +29,16 @@ for epi in range(episode):
     if epi % int(5 / time_per_epi + 1) == 0:
         Env.resample_command()
         Env.apply_disturbance()
-    over = torch.tensor([0],device = "cuda")
+    over = torch.tensor([0], device="cuda")
     for step in range(maximum_step):
         """获取当前状态"""
         state = Env.get_current_observations()
         state[:, 33:] = 0  # basic state 之后就是地图信息，第一阶段机器人盲走
         privilege_state = Env.get_privilege()
-        Estimator_1.store_new_state_and_output(state[:,:33], privilege_state/100, step, over)
+        Estimator_1.store_new_state_and_output(state[:, :33], privilege_state / 100, step, over)
 
-        if step==maximum_step-1:
-            print("estimate_error:",(Estimator_1.get_estimate_output()*100-privilege_state).abs().mean())
+        if step == maximum_step - 1:
+            print("estimate_error:", (Estimator_1.get_estimate_output() * 100 - privilege_state).abs().mean())
 
         """做动作"""
         action, scaled_action = PPO_3.sample_action(state, deterministic=not train)

@@ -1,6 +1,6 @@
 class EnvCfg:
     class EnvParam:  # 训练环境的参数
-        agents_num = 1000
+        agents_num = 4000
         agents_num_in_play = 10
         file_path = "Model/Robot_Model/SF_TRON1A.usd"  # abs path, not relative path
         dt = 0.02
@@ -8,7 +8,7 @@ class EnvCfg:
         friction_coef = 1
         device = 'cuda'
         backend = "torch"
-        train = True
+        train = False
         headless = train  # True: no GUI, False: GUI
 
 class RobotCfg:
@@ -75,6 +75,6 @@ class PPOCfg:
         state_dim = 33
         history_length = 10
         output_dim = 2
-        estimator_layers_num = 128
+        estimator_layers_num = 256
         estimator_lr = 1e-4
         estimator_update_frequency = 300
