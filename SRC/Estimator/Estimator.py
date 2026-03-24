@@ -87,6 +87,7 @@ class Estimator:
             self.save_best_model()
             self.min_loss_so_far = loss.item()
         self.save_each_epi_model()
+        self.reset()
 
     def reset(self):
         self.forward_state_buffer[:] = 0
