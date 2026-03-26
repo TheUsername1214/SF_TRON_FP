@@ -155,7 +155,7 @@ class BaseEnv:
             self.vel_cmd[:] = 1
 
     def apply_disturbance(self, activate=True):
-        is_apply = torch.rand((self.agents_num, 1), device=self.device) > 0.8 # 给20%的人加外力
+        is_apply = torch.rand((self.agents_num, 1), device=self.device) >0.8 # 给20%的人加外力
         self.external_body_force = rand_num((self.agents_num,3),self.device)*is_apply.float()
         self.external_body_torques = rand_num((self.agents_num,3),self.device)*is_apply.float()
 

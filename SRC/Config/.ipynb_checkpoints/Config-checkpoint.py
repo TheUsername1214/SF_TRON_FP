@@ -43,6 +43,10 @@ class RobotCfg:
         restitution_range = 1
         Kp_range = 0.1
         Kd_range = 0.1
+        # u(t-delay)
+        action_delay_range = 9 # unit in sub step
+        # external force
+        external_body_force_range = [50,50,10]
 
 
 
@@ -59,7 +63,7 @@ class PPOCfg:
         act_layers_num = 256
         actuator_num = RobotCfg.ActuatorParam.actuator_num
         actor_lr = 1e-4
-        actor_update_frequency = 40
+        actor_update_frequency = 50
 
     class PPOParam:  # 强化学习 PPO算法 参数
         gamma = 0.99
@@ -74,7 +78,7 @@ class PPOCfg:
     class EstimatorParam:
         state_dim = 33
         history_length = 10
-        output_dim = 5
-        estimator_layers_num = 64
-        estimator_lr = 5e-4
+        output_dim = 8
+        estimator_layers_num = 128
+        estimator_lr = 1e-3
         estimator_update_frequency = 300

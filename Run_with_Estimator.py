@@ -20,7 +20,7 @@ PPO_3 = Actor_Critic(PPOCfg, EnvCfg, index=2)
 Estimator_1 = Estimator(PPOCfg, EnvCfg, index=1)
 if not train:
     PPO_3.load_best_model()
-    Estimator_1.load_best_model()
+    Estimator_1.load_each_epi_model()
 
 Env = TronEnv(EnvCfg, RobotCfg, PPOCfg)
 import torch
@@ -42,14 +42,10 @@ for epi in range(episode):
         if not train:
             privilege_state = Env.get_privilege()
             est = Estimator_1.get_estimate_output()
-            force_est = est[:, 3:5]
-            vel_est = est[:, :3]
-            Img.append(epi * maximum_step + step, 100 * force_est[0, 0].item(), 0)
-            Img.append(epi * maximum_step + step, 100 * privilege_state[:, 3:5][0, 0].item(), 1)
-            Img.animation_plot()
-            print("force_estimate_error:", (force_est - privilege_state[:, 3:5]))
 
-            print("vel_estimate_error:", (vel_est - privilege_state[:, :3]))
+            Img.append(epi * maximum_step + step, 100 * est[:,0:1][0, 0].item(), 0)
+            Img.append(epi * maximum_step + step, 100 * privilege_state[:, 0:1][0, 0].item(), 1)
+            Img.animation_plot()
 
         """做动作"""
         action, scaled_action = PPO_3.sample_action(full_state, deterministic=not train)
