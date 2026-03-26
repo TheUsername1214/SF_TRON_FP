@@ -1,7 +1,7 @@
 class EnvCfg:
     class EnvParam:  # 训练环境的参数
         agents_num = 4000
-        agents_num_in_play = 10
+        agents_num_in_play = 1
         file_path = "Model/Robot_Model/SF_TRON1A.usd"  # abs path, not relative path
         dt = 0.02
         sub_step = 10

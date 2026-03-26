@@ -9,7 +9,9 @@ from SF_TRON_FP.SRC.Env.TronEnv import TronEnv
 from SF_TRON_FP.SRC.PPO.Actor_Critic import Actor_Critic
 from SF_TRON_FP.SRC.Config.Config import *
 from SF_TRON_FP.SRC.Estimator.Estimator import *
+from SF_TRON_FP.SRC.Plotter.ImagePlotter import *
 
+Img = ImagePlotter(image_number=2)
 maximum_step = PPOCfg.PPOParam.maximum_step
 episode = PPOCfg.PPOParam.episode
 time_per_epi = EnvCfg.EnvParam.dt * maximum_step
@@ -47,9 +49,13 @@ for epi in range(episode):
         if not train:
             est = Estimator_1.get_estimate_output()
             force_est = est[:,3:5]
-            vel_est = est[:,:3]   
-            print("force_estimate_error:", (force_est - privilege_state[:,3:5]).abs().mean())
-            print("vel_estimate_error:", (vel_est - privilege_state[:,:3]).abs().mean())       
+            vel_est = est[:,:3]
+            Img.append(epi*maximum_step+step,100*force_est[0,0].item(),0)
+            Img.append(epi * maximum_step + step, 100*privilege_state[:,3:5][0,0].item(), 1)
+            Img.animation_plot()
+            print("force_estimate_error:", (force_est - privilege_state[:,3:5]))
+
+            print("vel_estimate_error:", (vel_est - privilege_state[:,:3]))
 
         """做动作"""
         action, scaled_action = PPO_3.sample_action(state, deterministic=not train)

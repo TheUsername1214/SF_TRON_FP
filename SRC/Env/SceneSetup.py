@@ -76,7 +76,7 @@ def _build_terrain_generator_config(num_rows: int = 5) -> TerrainGeneratorCfg:
     sub_terrains = {}
 
     # 生成多个不同深度的垫脚石地形
-    depths = 1*np.linspace(-0.15, -0.2, terrain_number)
+    depths = 0*np.linspace(-0.15, -0.2, terrain_number)
     for i, depth in enumerate(depths):
         sub_terrains[f"stepping_stone{i}"] = HfSteppingStonesTerrainCfg(
             proportion=1.0,
