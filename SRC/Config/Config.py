@@ -1,6 +1,6 @@
 class EnvCfg:
     class EnvParam:  # 训练环境的参数
-        agents_num = 4000
+        agents_num = 40
         agents_num_in_play = 10
         file_path = "Model/Robot_Model/SF_TRON1A.usd"  # abs path, not relative path
         dt = 0.02
@@ -78,7 +78,7 @@ class PPOCfg:
     class EstimatorParam:
         state_dim = 33
         history_length = 10
-        output_dim = 5
+        output_dim = 8
         estimator_layers_num = 64
         estimator_lr = 5e-4
         estimator_update_frequency = 300

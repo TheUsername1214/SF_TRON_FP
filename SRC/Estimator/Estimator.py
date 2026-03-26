@@ -61,12 +61,19 @@ class Estimator:
 
     def store_new_state_and_output(self, state, output, step, over):
         # 前面的移到后面
-        self.state_buffer[step:, :, self.state_dim:] = (1-over.float()) * self.state_buffer[step:, :, :-self.state_dim]
-        self.state_buffer[step:, :, :self.state_dim] = state # 新的放最前面
-
-        self.forward_state_buffer[:, self.state_dim:] = (1-over.float()) * self.forward_state_buffer[:, :-self.state_dim]
-        self.forward_state_buffer[:, :self.state_dim] = state
+        self.state_buffer[step:, :, self.state_dim:] = self.state_buffer[step:, :, :-self.state_dim]
+        self.state_buffer[step:, :, :self.state_dim] = state  # 新的放最前面
         self.output_buffer[step:, :, :] = output
+        self.state_buffer[:] *= (1 - over.float())
+        self.output_buffer *= (1 - over.float())
+
+    def store_forward_state(self, state, over=None):
+        if over is None:
+            over = torch.tensor([0], device=self.device)
+        self.forward_state_buffer[:, self.state_dim:] = (1 - over.float()) * self.forward_state_buffer[:,
+                                                                             :-self.state_dim]
+        self.forward_state_buffer[:, :self.state_dim] = state
+        self.forward_state_buffer *= (1 - over.float())
 
     def update(self):
         state = self.state_buffer.view(-1, self.state_dim * self.history_length)

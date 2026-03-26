@@ -7,7 +7,7 @@ project_root = os.path.dirname(current_dir)  # 假设脚本在项目子目录中
 sys.path.insert(0, project_root)
 from SF_TRON_FP.SRC.Env.TronEnv import TronEnv
 from SF_TRON_FP.SRC.PPO.Actor_Critic import Actor_Critic
-from SF_TRON_FP.SRC.Config.Config import *
+from SF_TRON_FP.SRC.Config.TS_Config import *
 from SF_TRON_FP.SRC.Estimator.Estimator import *
 from SF_TRON_FP.SRC.Plotter.ImagePlotter import *
 
@@ -31,34 +31,28 @@ for epi in range(episode):
     if epi % int(5 / time_per_epi + 1) == 0:
         Env.resample_command()
         Env.apply_disturbance()
-    over = torch.tensor([0], device="cuda")
+    state = Env.get_current_observations()
+    Estimator_1.store_forward_state(state[:, :33])
     for step in range(maximum_step):
         """获取当前状态"""
         state = Env.get_current_observations()
         state[:, 33:] = 0  # basic state 之后就是地图信息，第一阶段机器人盲走
-        privilege_state = Env.get_privilege()
-        privilege_state[:,3:5] = privilege_state[:,3:5]/100
-        Estimator_1.store_new_state_and_output(state[:, :33], privilege_state, step, over)
-
-        if step == maximum_step - 1:
-            est = Estimator_1.get_estimate_output()
-            force_est = est[:,3:5]
-            vel_est = est[:,:3]
-            print("force_estimate_error:", (force_est - privilege_state[:,3:5]).abs().mean())
-            print("vel_estimate_error:", (vel_est - privilege_state[:,:3]).abs().mean())
+        estimated_privilege_state = Estimator_1.get_estimate_output()
+        full_state = torch.concatenate((state,estimated_privilege_state),dim=-1)
         if not train:
+            privilege_state = Env.get_privilege()
             est = Estimator_1.get_estimate_output()
-            force_est = est[:,3:5]
-            vel_est = est[:,:3]
-            Img.append(epi*maximum_step+step,100*force_est[0,0].item(),0)
-            Img.append(epi * maximum_step + step, 100*privilege_state[:,3:5][0,0].item(), 1)
+            force_est = est[:, 3:5]
+            vel_est = est[:, :3]
+            Img.append(epi * maximum_step + step, 100 * force_est[0, 0].item(), 0)
+            Img.append(epi * maximum_step + step, 100 * privilege_state[:, 3:5][0, 0].item(), 1)
             Img.animation_plot()
-            print("force_estimate_error:", (force_est - privilege_state[:,3:5]))
+            print("force_estimate_error:", (force_est - privilege_state[:, 3:5]))
 
-            print("vel_estimate_error:", (vel_est - privilege_state[:,:3]))
+            print("vel_estimate_error:", (vel_est - privilege_state[:, :3]))
 
         """做动作"""
-        action, scaled_action = PPO_3.sample_action(state, deterministic=not train)
+        action, scaled_action = PPO_3.sample_action(full_state, deterministic=not train)
 
         """更新环境"""
         Env.update_world(scaled_action=scaled_action)
@@ -67,6 +61,10 @@ for epi in range(episode):
 
         next_state = Env.get_next_observations()
         next_state[:, 33:] = 0
+        next_privilege_state = Env.get_privilege()
+        Estimator_1.store_forward_state(next_state[:, :33])
+        next_estimated_privilege_state = Estimator_1.get_estimate_output()
+        next_full_state = torch.concatenate((next_state, next_estimated_privilege_state), dim=-1)
 
         """计算奖励 判断是否结束"""
 
@@ -74,12 +72,17 @@ for epi in range(episode):
 
         """存储经验"""
         if train:
-            PPO_3.store_experience(state,
+            PPO_3.store_experience(full_state,
                                    action,
-                                   next_state,
+                                   next_full_state,
                                    reward,
                                    over,
                                    step)
+
+            Estimator_1.store_new_state_and_output(next_state[:, :33],
+                                                   next_privilege_state,
+                                                   step,
+                                                   over)
 
         """重置挂掉的机器人"""
         over += extra_over

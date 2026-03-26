@@ -147,7 +147,11 @@ class TronEnv(BaseEnv):
         L_foot_contact_force = self.scene["L_contact_sensor"].data.net_forces_w[:, 0, 2].view(-1, 1)
         R_foot_contact_force = self.scene["R_contact_sensor"].data.net_forces_w[:, 0, 2].view(-1, 1)
         # #——————————————————————获取额外机器人状态结束————————————————————————————————##
-        return torch.concatenate((linear_vel, L_foot_contact_force, R_foot_contact_force), dim=1)
+        return torch.concatenate((self.external_body_force/100,
+                                          linear_vel/2,
+                                          L_foot_contact_force/500,
+                                          R_foot_contact_force/500),
+                                         dim=1)
 
     """更新环境"""
 
