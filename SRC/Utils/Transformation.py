@@ -12,13 +12,13 @@ def FT(array: Union[np.ndarray, list, torch.Tensor]) -> torch.Tensor:
     return torch.FloatTensor(array).to(torch.device("cuda:0"))
 
 
-def rand_num(shape: torch.Tensor, device) -> torch.Tensor:
+def rand_num(shape, device) -> torch.Tensor:
     """
     return array of [-1,1] random number
     :param shape:
     :return:
     """
-    return 2 * torch.rand(shape[0], shape[1], device=device) - 1
+    return 2 * torch.rand(shape, device=device) - 1
 
 
 def rand_num_like(array: torch.Tensor) -> torch.Tensor:

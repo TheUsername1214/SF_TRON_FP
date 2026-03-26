@@ -34,6 +34,9 @@ class BaseEnv:
         self.Kp = self.Kp * (1 + Kp_range * rand_num_like(self.Kp))
         self.Kd = self.Kd * (1 + Kd_range * rand_num_like(self.Kd))
 
+        self.action_delay_range = self.DomainRandomizationCfg.action_delay_range
+        self.external_body_force_range = self.DomainRandomizationCfg.external_body_force_range
+
         """初始化机器人位姿参数"""
         self.initial_body_linear_vel_range = RobotCfg.InitialState.initial_body_linear_vel_range
         self.initial_body_angular_vel_range = RobotCfg.InitialState.initial_body_angular_vel_range
@@ -51,7 +54,22 @@ class BaseEnv:
         self.R_feet_air_time = torch.zeros((self.agents_num, 1), device=self.device)  # 右脚离地时间
         self.action = torch.zeros((self.agents_num, self.actuator_num), device=self.device)  # 动作
         self.prev_action = torch.zeros((self.agents_num, self.actuator_num), device=self.device)  # 上一次动作
-        self.delay_idx = torch.rand((self.agents_num, 1), device=self.device) > 0.5  # 上一次动作
+        self.action_history = torch.zeros((self.agents_num, self.sub_step, self.actuator_num),
+                                          device=self.device)  # 动作历史
+        self.action_delay_idx = torch.randint(0, self.action_delay_range, (self.agents_num,),
+                                              device=self.device)  # 延迟多少步
+        self.external_body_force = torch.zeros((self.agents_num,1, 3), device=self.device) # the dim 1 is necessary for isaac lab
+        self.external_body_torques = torch.zeros((self.agents_num, 1, 3), device=self.device)
+        self.all_agent_indices = torch.arange(self.agents_num, device=self.device)
+
+        self.reset_list = [self.time,
+                           self.phase,
+                           self.L_feet_air_time,
+                           self.R_feet_air_time,
+                           self.prev_action,
+                           self.action,
+                           self.action_history,
+                           self.action_delay_idx]
 
         """奖励和"""
         self.max_step = PPOCfg.PPOParam.maximum_step
@@ -113,12 +131,8 @@ class BaseEnv:
 
         # 设置速度命令和时间
         """重新初始化额外机器人参数"""
-        self.time[agent_index] = 0
-        self.phase[agent_index] = 0
-        self.L_feet_air_time[agent_index] = 0
-        self.R_feet_air_time[agent_index] = 0
-        self.prev_action = torch.zeros((self.agents_num, self.actuator_num), device=self.device)  # 上一次动作
-        self.action[agent_index] = 0
+        for i in range(len(self.reset_list)):
+            self.reset_list[i][agent_index] = 0
 
         # 获取prim并设置身体速度
         # self.scene["robot"].reset(env_ids=agent_index.cpu().tolist())
@@ -141,15 +155,19 @@ class BaseEnv:
             self.vel_cmd[:] = 1
 
     def apply_disturbance(self, activate=True):
-        agent_index = torch.randperm(self.agents_num, device=self.device)[:int(0.3 * self.agents_num)]  # 20% push
-        num_agents = len(agent_index)
-        ang_vel_w = self.scene["robot"].data.root_com_ang_vel_w[agent_index]
-        lin_vel_w = self.scene["robot"].data.root_com_lin_vel_w[agent_index]
-        initial_linear_vel = self.initial_body_linear_vel_range * rand_num((num_agents, 3), device=self.device)
-        initial_linear_vel[:, -1] = 0  # no push in z
-        initial_angular_vel = self.initial_body_angular_vel_range * rand_num((num_agents, 3), device=self.device)
+        is_apply = torch.rand((self.agents_num, 1), device=self.device) >0.8 # 给20%的人加外力
+        self.external_body_force = rand_num((self.agents_num,1,3),self.device)*is_apply.float()
+        self.external_body_torques = rand_num((self.agents_num,1,3),self.device)*is_apply.float()
 
-        initial_linear_vel += lin_vel_w
-        initial_angular_vel += ang_vel_w
-        initial_body_v_w = torch.concatenate((initial_linear_vel, initial_angular_vel), dim=1)
-        self.scene["robot"].write_root_velocity_to_sim(root_velocity=initial_body_v_w, env_ids=agent_index)
+        self.external_body_force[:,:, 0] *= self.external_body_force_range[0]
+        self.external_body_force[:,:, 1] *= self.external_body_force_range[1]
+        self.external_body_force[:,:, 2] *= self.external_body_force_range[2]
+
+        self.scene["robot"].set_external_force_and_torque(self.external_body_force,
+                                                          self.external_body_torques,
+                                                          body_ids=[0]*self.agents_num,
+                                                          is_global=True)
+
+    def append_action_history(self, action):
+        self.action_history[:, 1:, :] = self.action_history[:, :-1, :].clone()
+        self.action_history[:, 0, :] = action.clone()

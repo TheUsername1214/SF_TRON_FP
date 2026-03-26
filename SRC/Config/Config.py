@@ -1,7 +1,7 @@
 class EnvCfg:
     class EnvParam:  # 训练环境的参数
         agents_num = 4000
-        agents_num_in_play = 1
+        agents_num_in_play = 10
         file_path = "Model/Robot_Model/SF_TRON1A.usd"  # abs path, not relative path
         dt = 0.02
         sub_step = 10
@@ -43,6 +43,10 @@ class RobotCfg:
         restitution_range = 1
         Kp_range = 0.1
         Kd_range = 0.1
+        # u(t-delay)
+        action_delay_range = 9 # unit in sub step
+        # external force
+        external_body_force_range = [50,50,10]
 
 
 

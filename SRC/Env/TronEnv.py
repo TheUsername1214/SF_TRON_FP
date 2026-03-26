@@ -162,9 +162,11 @@ class TronEnv(BaseEnv):
         self.prev_action = scaled_action.clone()
 
         for decimation in range(self.sub_step):
+            self.append_action_history(self.action)
+            self.real_action = self.action_history[self.all_agent_indices, self.action_delay_idx]
             joint_pos = self.scene["robot"].data.joint_pos
             joint_vel = self.scene["robot"].data.joint_vel
-            torque = (self.action + self.default_PD_angle - joint_pos) * self.Kp - joint_vel * self.Kd
+            torque = (self.real_action + self.default_PD_angle - joint_pos) * self.Kp - joint_vel * self.Kd
             torque[:, :6] = torque[:, :6].clip(-80, 80)
             torque[:, -2:] = torque[:, -2:].clip(-20, 20)
             self.scene["robot"].set_joint_effort_target(torque)
