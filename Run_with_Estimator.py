@@ -46,7 +46,7 @@ for epi in range(episode):
 
             Img.append(epi * maximum_step + step, 100 * est[:,5:6][0, 0].item(), 0)
             Img.append(epi * maximum_step + step, 100 * privilege_state[:, 5:6][0, 0].item(), 1)
-            Img.animation_plot()
+            # Img.animation_plot()
 
         """做动作"""
         action, scaled_action = PPO_3.sample_action(full_state, deterministic=not train)
