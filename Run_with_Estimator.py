@@ -30,6 +30,7 @@ for epi in range(episode):
     print(f"===================episode: {epi}===================")
     if epi % int(5 / time_per_epi + 1) == 0:
         Env.resample_command()
+    if epi % int(2 / time_per_epi + 1) == 0:
         Env.apply_disturbance()
     state = Env.get_current_observations()
     Estimator_1.store_forward_state(state[:, :33])
@@ -43,8 +44,8 @@ for epi in range(episode):
             privilege_state = Env.get_privilege()
             est = Estimator_1.get_estimate_output()
 
-            Img.append(epi * maximum_step + step, 100 * est[:,0:1][0, 0].item(), 0)
-            Img.append(epi * maximum_step + step, 100 * privilege_state[:, 0:1][0, 0].item(), 1)
+            Img.append(epi * maximum_step + step, 100 * est[:,5:6][0, 0].item(), 0)
+            Img.append(epi * maximum_step + step, 100 * privilege_state[:, 5:6][0, 0].item(), 1)
             Img.animation_plot()
 
         """做动作"""

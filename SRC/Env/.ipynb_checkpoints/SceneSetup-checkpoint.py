@@ -76,7 +76,7 @@ def _build_terrain_generator_config(num_rows: int = 5) -> TerrainGeneratorCfg:
     sub_terrains = {}
 
     # 生成多个不同深度的垫脚石地形
-    depths = 1*np.linspace(-0.15, -0.2, terrain_number)
+    depths = 0*np.linspace(-0.15, -0.2, terrain_number)
     for i, depth in enumerate(depths):
         sub_terrains[f"stepping_stone{i}"] = HfSteppingStonesTerrainCfg(
             proportion=1.0,
@@ -188,7 +188,7 @@ class _RobotSceneCfg(InteractiveSceneCfg):
         mesh_prim_paths=["/World/defaultGroundPlane"],
         max_distance=6.0,
         depth_clipping_behavior="max",
-        debug_vis=True,
+        debug_vis=False,
         offset=RayCasterCameraCfg.OffsetCfg(convention="world"),
         pattern_cfg=patterns.PinholeCameraPatternCfg(
             width=int(11 * (45.55 / 26.6)),

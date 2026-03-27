@@ -147,7 +147,11 @@ class TronEnv(BaseEnv):
         L_foot_contact_force = self.scene["L_contact_sensor"].data.net_forces_w[:, 0, 2].view(-1, 1)
         R_foot_contact_force = self.scene["R_contact_sensor"].data.net_forces_w[:, 0, 2].view(-1, 1)
         # #——————————————————————获取额外机器人状态结束————————————————————————————————##
-        return torch.concatenate((linear_vel, L_foot_contact_force, R_foot_contact_force), dim=1)
+        return torch.concatenate((self.external_body_force/100,
+                                          linear_vel/2,
+                                          L_foot_contact_force/500,
+                                          R_foot_contact_force/500),
+                                         dim=1)
 
     """更新环境"""
 
@@ -160,11 +164,13 @@ class TronEnv(BaseEnv):
         self.effort1 = (self.prev_action - scaled_action).abs().mean(dim=-1, keepdim=True)
         self.action = scaled_action.clone()
         self.prev_action = scaled_action.clone()
-
+        
         for decimation in range(self.sub_step):
+            self.append_action_history(self.action)
+            self.real_action = self.action_history[self.all_agent_indices, self.action_delay_idx]
             joint_pos = self.scene["robot"].data.joint_pos
             joint_vel = self.scene["robot"].data.joint_vel
-            torque = (self.action + self.default_PD_angle - joint_pos) * self.Kp - joint_vel * self.Kd
+            torque = (self.real_action + self.default_PD_angle - joint_pos) * self.Kp - joint_vel * self.Kd
             torque[:, :6] = torque[:, :6].clip(-80, 80)
             torque[:, -2:] = torque[:, -2:].clip(-20, 20)
             self.scene["robot"].set_joint_effort_target(torque)

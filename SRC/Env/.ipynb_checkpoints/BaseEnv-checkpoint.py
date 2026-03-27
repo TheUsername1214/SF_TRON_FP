@@ -68,8 +68,7 @@ class BaseEnv:
                            self.R_feet_air_time,
                            self.prev_action,
                            self.action,
-                           self.action_history,
-                           self.action_delay_idx]
+                           self.action_history]
 
         """奖励和"""
         self.max_step = PPOCfg.PPOParam.maximum_step
@@ -155,24 +154,23 @@ class BaseEnv:
             self.vel_cmd[:] = 1
 
     def apply_disturbance(self, activate=True):
-        is_apply = torch.rand((self.agents_num, 1), device=self.device) >0.8 # 给20%的人加外力
-        self.external_body_force = rand_num((self.agents_num,3),self.device)*is_apply.float()
-        self.external_body_torques = rand_num((self.agents_num,3),self.device)*is_apply.float()
+        is_apply = torch.rand((self.agents_num, 1), device=self.device) > 0.8  # 给20%的人加外力
+        self.external_body_force = rand_num((self.agents_num, 3), self.device) * is_apply.float()
+        self.external_body_torques = rand_num((self.agents_num, 3), self.device) * is_apply.float()
 
         self.external_body_force[:, 0] *= self.external_body_force_range[0]
         self.external_body_force[:, 1] *= self.external_body_force_range[1]
         self.external_body_force[:, 2] *= self.external_body_force_range[2]
+        external_body_force = rand_num((self.agents_num, 1, 3), self.device)
+        external_body_torques = rand_num((self.agents_num,1, 3), self.device)*0
 
-        external_body_force = rand_num((self.agents_num,1,3),self.device)*is_apply.float()
-        external_body_torques = rand_num((self.agents_num,1,3),self.device)*is_apply.float()
-
-        external_body_force[:, 0] = self.external_body_force
-        external_body_torques[:] = 0 # 这么做是因为内存里张量维度和print出来的不一致
+        external_body_force[:, 0,:] = self.external_body_force
 
         self.scene["robot"].set_external_force_and_torque(external_body_force,
                                                           external_body_torques,
-                                                          body_ids=[0]*self.agents_num,
+                                                          body_ids=[0] ,
                                                           is_global=True)
+
 
     def append_action_history(self, action):
         self.action_history[:, 1:, :] = self.action_history[:, :-1, :].clone()

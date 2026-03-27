@@ -164,7 +164,7 @@ class TronEnv(BaseEnv):
         self.effort1 = (self.prev_action - scaled_action).abs().mean(dim=-1, keepdim=True)
         self.action = scaled_action.clone()
         self.prev_action = scaled_action.clone()
-
+        
         for decimation in range(self.sub_step):
             self.append_action_history(self.action)
             self.real_action = self.action_history[self.all_agent_indices, self.action_delay_idx]

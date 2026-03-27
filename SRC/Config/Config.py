@@ -24,8 +24,8 @@ class RobotCfg:
     class InitialState:
         initial_height = 0.85
         initial_euler_angle_range = [0.1, 0.25, 0.1]
-        initial_body_linear_vel_range = 0.2
-        initial_body_angular_vel_range = 0.2
+        initial_body_linear_vel_range = 0.1
+        initial_body_angular_vel_range = 0.1
         initial_joint_pos_range = 0.1
         initial_joint_vel_range = 0
         initial_joint_angle = [0, 0,
@@ -44,9 +44,9 @@ class RobotCfg:
         Kp_range = 0.1
         Kd_range = 0.1
         # u(t-delay)
-        action_delay_range = 9 # unit in sub step
+        action_delay_range = 5 # unit in sub step
         # external force
-        external_body_force_range = [50,50,10]
+        external_body_force_range = [30,30,5]
 
 
 
@@ -58,8 +58,8 @@ class PPOCfg:
         critic_update_frequency = 300
 
     class ActorParam:  # Actor 神经网络 参数
-        action_scale = [1, 1, 1, 1, 1, 1, 1, 1]
-        std_scale = 0.5
+        action_scale = [0.6,0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6]
+        std_scale = 0.6
         act_layers_num = 256
         actuator_num = RobotCfg.ActuatorParam.actuator_num
         actor_lr = 1e-4
@@ -69,7 +69,7 @@ class PPOCfg:
         gamma = 0.99
         lam = 0.95
         epsilon = 0.2
-        policy_smooth = 0.6
+        policy_smooth = 0.1
         maximum_step = 25
         episode = 3000
         entropy_coef = 0  # positive means std increase, else decrease
